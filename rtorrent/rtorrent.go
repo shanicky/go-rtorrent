@@ -3,6 +3,7 @@ package rtorrent
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/mrobinsn/go-rtorrent/xmlrpc"
 	"github.com/pkg/errors"
@@ -23,6 +24,8 @@ type Torrent struct {
 	Label     string
 	Completed bool
 	Ratio     float64
+	Started   time.Time
+	URL       string
 }
 
 // Status represents the status of a torrent
@@ -192,7 +195,7 @@ func (r *RTorrent) UpRate() (int, error) {
 
 // GetTorrents returns all of the torrents reported by this RTorrent instance
 func (r *RTorrent) GetTorrents(view View) ([]Torrent, error) {
-	args := []interface{}{"", string(view), "d.name=", "d.size_bytes=", "d.hash=", "d.custom1=", "d.base_path=", "d.is_active=", "d.complete=", "d.ratio="}
+	args := []interface{}{"", string(view), "d.name=", "d.size_bytes=", "d.hash=", "d.custom1=", "d.base_path=", "d.is_active=", "d.complete=", "d.ratio=", "d.timestamp.started=", "t.multicall=,t.url="}
 	results, err := r.xmlrpcClient.Call("d.multicall2", args...)
 	var torrents []Torrent
 	if err != nil {
@@ -209,6 +212,8 @@ func (r *RTorrent) GetTorrents(view View) ([]Torrent, error) {
 				Label:     torrentData[3].(string),
 				Completed: torrentData[6].(int) > 0,
 				Ratio:     float64(torrentData[7].(int)) / float64(1000),
+				Started:   time.Unix(int64(torrentData[8].(int)), 0),
+				URL:       torrentData[9].([]interface{})[0].([]interface{})[0].(string),
 			})
 		}
 	}
@@ -255,6 +260,21 @@ func (r *RTorrent) GetTorrent(hash string) (Torrent, error) {
 		return t, errors.Wrap(err, "d.ratio XMLRPC call failed")
 	}
 	t.Ratio = float64(results.([]interface{})[0].(int)) / float64(1000)
+
+	// Started
+	results, err = r.xmlrpcClient.Call("d.timestamp.started", t.Hash)
+	if err != nil {
+		return t, errors.Wrap(err, "d.timestamp.started XMLRPC call failed")
+	}
+	t.Started = time.Unix(int64(results.([]interface{})[0].(int)), 0)
+
+	// URL
+	results, err = r.xmlrpcClient.Call("t.url", t.Hash+":t0")
+	if err != nil {
+		return t, errors.Wrap(err, "t.url XMLRPC call failed")
+	}
+	t.URL = results.([]interface{})[0].(string)
+
 	return t, nil
 }
 

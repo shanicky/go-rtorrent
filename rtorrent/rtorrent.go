@@ -280,10 +280,15 @@ func (r *RTorrent) GetTorrent(hash string) (Torrent, error) {
 
 // Delete removes the torrent
 func (r *RTorrent) Delete(t Torrent) error {
-	_, err := r.xmlrpcClient.Call("d.erase", t.Hash)
-	if err != nil {
+	args := []interface{}{t.Hash, "2"}
+	if _, err := r.xmlrpcClient.Call("d.custom5.set", args...); err != nil {
+		return errors.Wrap(err, "d.custom5.set XMLRPC call failed")
+	}
+
+	if _, err := r.xmlrpcClient.Call("d.erase", t.Hash); err != nil {
 		return errors.Wrap(err, "d.erase XMLRPC call failed")
 	}
+
 	return nil
 }
 

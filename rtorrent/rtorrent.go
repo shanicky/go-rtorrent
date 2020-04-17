@@ -292,6 +292,15 @@ func (r *RTorrent) Delete(t Torrent) error {
 	return nil
 }
 
+// Stop stop the torrent
+func (r *RTorrent) Stop(t Torrent) error {
+	if _, err := r.xmlrpcClient.Call("d.stop", t.Hash); err != nil {
+		return errors.Wrap(err, "d.stop XMLRPC call failed")
+	}
+
+	return nil
+}
+
 // GetFiles returns all of the files for a given `Torrent`
 func (r *RTorrent) GetFiles(t Torrent) ([]File, error) {
 	args := []interface{}{t.Hash, 0, "f.path=", "f.size_bytes="}
@@ -320,6 +329,14 @@ func (r *RTorrent) SetLabel(t Torrent, newLabel string) error {
 		return errors.Wrap(err, "d.custom1.set XMLRPC call failed")
 	}
 	return nil
+}
+
+func (r *RTorrent) GetTorrentUpRate(t Torrent) (int, error) {
+	results, err := r.xmlrpcClient.Call("d.up.rate", t.Hash)
+	if err != nil {
+		return 0, errors.Wrap(err, "d.up.rate XMLRPC call failed")
+	}
+	return results.([]interface{})[0].(int), nil
 }
 
 // GetStatus returns the Status for a given Torrent

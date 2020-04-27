@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mrobinsn/go-rtorrent/xmlrpc"
+	"github.com/shanicky/go-rtorrent/xmlrpc"
 	"github.com/pkg/errors"
 )
 

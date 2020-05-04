@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/shanicky/go-rtorrent/xmlrpc"
 	"github.com/pkg/errors"
+	"github.com/shanicky/go-rtorrent/xmlrpc"
 )
 
 // RTorrent is used to communicate with a remote rTorrent instance
@@ -26,6 +26,8 @@ type Torrent struct {
 	Ratio     float64
 	Started   time.Time
 	URL       string
+	UpRate    int
+	DownRate  int
 }
 
 // Status represents the status of a torrent
@@ -195,7 +197,7 @@ func (r *RTorrent) UpRate() (int, error) {
 
 // GetTorrents returns all of the torrents reported by this RTorrent instance
 func (r *RTorrent) GetTorrents(view View) ([]Torrent, error) {
-	args := []interface{}{"", string(view), "d.name=", "d.size_bytes=", "d.hash=", "d.custom1=", "d.base_path=", "d.is_active=", "d.complete=", "d.ratio=", "d.timestamp.started=", "t.multicall=,t.url="}
+	args := []interface{}{"", string(view), "d.name=", "d.size_bytes=", "d.hash=", "d.custom1=", "d.base_path=", "d.is_active=", "d.complete=", "d.ratio=", "d.timestamp.started=", "d.up.rate=", "d.down.rate=", "t.multicall=,t.url="}
 	results, err := r.xmlrpcClient.Call("d.multicall2", args...)
 	var torrents []Torrent
 	if err != nil {
@@ -213,7 +215,9 @@ func (r *RTorrent) GetTorrents(view View) ([]Torrent, error) {
 				Completed: torrentData[6].(int) > 0,
 				Ratio:     float64(torrentData[7].(int)) / float64(1000),
 				Started:   time.Unix(int64(torrentData[8].(int)), 0),
-				URL:       torrentData[9].([]interface{})[0].([]interface{})[0].(string),
+				UpRate:    torrentData[9].(int),
+				DownRate:  torrentData[10].(int),
+				URL:       torrentData[11].([]interface{})[0].([]interface{})[0].(string),
 			})
 		}
 	}

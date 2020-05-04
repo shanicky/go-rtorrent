@@ -305,6 +305,29 @@ func (r *RTorrent) Stop(t Torrent) error {
 	return nil
 }
 
+type XMLCall struct {
+	Name   string   `xml:"methodName"`
+	Params []string `xml:"params"`
+}
+
+// Remove removes the torrent
+func (r *RTorrent) Remove(t Torrent) error {
+	if _, err := r.xmlrpcClient.Call("system.multicall", []interface{}{XMLCall{
+		Name:   "d.custom5.set",
+		Params: []string{t.Hash, "1"},
+	}, XMLCall{
+		Name:   "d.delete_tied",
+		Params: []string{t.Hash},
+	}, XMLCall{
+		Name:   "d.erase",
+		Params: []string{t.Hash},
+	}}); err != nil {
+		return errors.Wrap(err, "remove XMLRPC call failed")
+	}
+
+	return nil
+}
+
 // GetFiles returns all of the files for a given `Torrent`
 func (r *RTorrent) GetFiles(t Torrent) ([]File, error) {
 	args := []interface{}{t.Hash, 0, "f.path=", "f.size_bytes="}
